@@ -30,3 +30,4 @@ class ClientMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientMetrics
         fields = '__all__'
+
