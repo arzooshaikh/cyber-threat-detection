@@ -5,4 +5,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apps.core.urls')),
     path('api/anomaly/', include('apps.anomaly_detection.urls')),
+    path('api/federated/', include('apps.federated_learning.urls')),
 ]
