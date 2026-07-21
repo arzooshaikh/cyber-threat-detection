@@ -21,6 +21,7 @@ function Navbar() {
       <Link to="/" style={linkStyle('/')}>Dashboard</Link>
       <Link to="/bases" style={linkStyle('/bases')}>Bases</Link>
       <Link to="/threats" style={linkStyle('/threats')}>Threats</Link>
+      <Link to="/federated" style={linkStyle('/federated')}>Federated Learning</Link>
       <Link to="/run-detection" style={linkStyle('/run-detection')}>Run Detection</Link>
     </nav>
   );
