@@ -25,3 +25,5 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+ml_models/datasets/*.csv
+ml_models/datasets/*.zip
