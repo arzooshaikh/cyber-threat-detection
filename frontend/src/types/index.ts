@@ -14,6 +14,7 @@ export interface FederatedModelRound {
   num_clients_available: number | null;
   model_version: string;
   model_checkpoint: string | null;
+  centralized_equivalent_bytes: number;
 }
 
 export interface ClientMetrics {

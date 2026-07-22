@@ -109,10 +109,11 @@ class FederatedModelRound(models.Model):
     global_f1 = models.FloatField(null=True, blank=True)
     global_auc = models.FloatField(null=True, blank=True)
     communication_bytes = models.BigIntegerField(default=0)
+    centralized_equivalent_bytes = models.BigIntegerField(default=0)  # NEW: what raw data transfer would have cost
     num_clients = models.IntegerField()
     num_clients_available = models.IntegerField(null=True, blank=True)
     model_version = models.CharField(max_length=100)
-    model_checkpoint = models.CharField(max_length=255, blank=True, null=True)  # path to saved .pkl
+    model_checkpoint = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         db_table = 'federated_model_rounds'

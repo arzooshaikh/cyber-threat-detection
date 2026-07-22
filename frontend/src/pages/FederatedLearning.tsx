@@ -92,7 +92,10 @@ function FederatedLearning() {
 
           <p>
             <strong>Clients:</strong> {latestRound.num_clients} &nbsp;|&nbsp;
-            <strong>Communication:</strong> {latestRound.communication_bytes.toLocaleString()} bytes &nbsp;|&nbsp;
+           <strong>Communication:</strong> {latestRound.communication_bytes.toLocaleString()} bytes
+            (vs. {latestRound.centralized_equivalent_bytes.toLocaleString()} bytes centralized —
+            {' '}{((1 - latestRound.communication_bytes / latestRound.centralized_equivalent_bytes) * 100).toFixed(1)}% reduction)
+            &nbsp;|&nbsp;
             <strong>Model:</strong> {latestRound.model_version}
           </p>
 

@@ -1,3 +1,5 @@
+import random
+
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -22,20 +24,29 @@ class RunFederatedRoundView(APIView):
     - Trains a local Isolation Forest per base
     - Evaluates the federated ensemble (weighted voting) on a fresh validation set
     - Saves a FederatedModelRound + one ClientMetrics row per base
+
+    NOTE: train_seed/val_seed are randomized on every call so that each round
+    is a genuinely new experiment (not a re-run of the exact same synthetic
+    data), otherwise every round would produce identical results.
     """
 
     def post(self, request):
         num_bases = int(request.data.get('num_bases', 3))
 
+        # Randomize seeds each round - otherwise every round regenerates the
+        # exact same data and gives the exact same (misleadingly perfect) result
+        train_seed = random.randint(1, 1_000_000)
+        val_seed = random.randint(1, 1_000_000)
+
         # 1. Generate and split training data across bases
-        full_df = generate_synthetic_traffic(n_samples=3000, attack_ratio=0.05, random_state=42)
-        base_data = split_data_across_bases(full_df, num_bases=num_bases)
+        full_df = generate_synthetic_traffic(n_samples=3000, attack_ratio=0.05, random_state=train_seed)
+        base_data = split_data_across_bases(full_df, num_bases=num_bases, random_state=train_seed)
 
         # 2. Each base trains its own local model
         trained_bases = train_local_models(base_data)
 
         # 3. Evaluate the federated ensemble on a fresh, unseen validation set
-        validation_df = generate_synthetic_traffic(n_samples=300, attack_ratio=0.05, random_state=99)
+        validation_df = generate_synthetic_traffic(n_samples=300, attack_ratio=0.05, random_state=val_seed)
         ensemble_result = federated_voting_predict(trained_bases, validation_df)
 
         y_true = (validation_df['label'] == 'attack').astype(int)
@@ -55,9 +66,16 @@ class RunFederatedRoundView(APIView):
         last_round = FederatedModelRound.objects.order_by('-round_number').first()
         round_number = (last_round.round_number + 1) if last_round else 1
 
-        # Rough communication cost estimate: each base sends back a prediction vector
-        # (not raw traffic, not raw model weights) - one float score per validation sample
-        communication_bytes = num_bases * len(validation_df) * 8  # 8 bytes per float64
+        # Federated approach: each base sends back one prediction score per validation
+        # sample (8 bytes per float64) - NOT raw traffic and NOT model weights/trees.
+        communication_bytes = num_bases * len(validation_df) * 8
+
+        # Centralized-equivalent comparison: what it would cost if every base instead
+        # sent its RAW local traffic feature vectors to a central server for training.
+        # Each row has len(AnomalyDetectionEngine.FEATURE_COLUMNS) features, 8 bytes each (float64).
+        num_features = len(next(iter(trained_bases.values()))[0].FEATURE_COLUMNS)
+        total_training_rows = sum(m['training_samples'] for _, m in trained_bases.values())
+        centralized_equivalent_bytes = total_training_rows * num_features * 8
 
         # 5. Save the round
         fl_round = FederatedModelRound.objects.create(
@@ -69,6 +87,7 @@ class RunFederatedRoundView(APIView):
             global_recall=recall,
             global_f1=f1,
             communication_bytes=communication_bytes,
+            centralized_equivalent_bytes=centralized_equivalent_bytes,
             num_clients=num_bases,
             num_clients_available=num_bases,
             model_version='ensemble-voting-v1',
@@ -106,8 +125,3 @@ class RunFederatedRoundView(APIView):
 
         serializer = FederatedModelRoundSerializer(fl_round)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-from django.shortcuts import render
-
-# Create your views here.
