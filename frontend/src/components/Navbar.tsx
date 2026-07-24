@@ -23,6 +23,7 @@ function Navbar() {
       <Link to="/threats" style={linkStyle('/threats')}>Threats</Link>
       <Link to="/federated" style={linkStyle('/federated')}>Federated Learning</Link>
       <Link to="/run-detection" style={linkStyle('/run-detection')}>Run Detection</Link>
+      <Link to="/threat-response" style={linkStyle('/threat-response')}>Threat Response</Link>
     </nav>
   );
 }

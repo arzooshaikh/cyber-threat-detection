@@ -5,6 +5,7 @@ import Bases from './pages/Bases';
 import Threats from './pages/Threats';
 import FederatedLearning from './pages/FederatedLearning';
 import RunDetection from './pages/RunDetection';
+import ThreatResponse from './pages/ThreatResponse';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/threats" element={<Threats />} />
         <Route path="/federated" element={<FederatedLearning />} />
         <Route path="/run-detection" element={<RunDetection />} />
+        <Route path="/threat-response" element={<ThreatResponse />} />
       </Routes>
     </BrowserRouter>
   );

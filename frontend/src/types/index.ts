@@ -1,3 +1,16 @@
+export interface FeatureContribution {
+  feature: string;
+  value: number;
+}
+
+export interface DetectAndRespondResult {
+  is_anomaly: boolean;
+  anomaly_score: number;
+  confidence_score: number;
+  feature_contributions: FeatureContribution[];
+  threat: ThreatDetection | null;
+}
+
 export interface MilitaryBase {
   id: number;
   base_id: string;
