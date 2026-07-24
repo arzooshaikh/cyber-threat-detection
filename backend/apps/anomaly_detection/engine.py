@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import joblib
+import shap
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
@@ -25,6 +26,7 @@ class AnomalyDetectionEngine:
         )
         self.scaler = StandardScaler()
         self.is_trained = False
+        self._explainer = None  # lazily-built shap.TreeExplainer, cached after first use
 
     def _prepare_features(self, df: pd.DataFrame) -> np.ndarray:
         """Extract and scale the numeric features used for training/prediction."""
@@ -58,6 +60,55 @@ class AnomalyDetectionEngine:
         result['anomaly_score'] = raw_scores
         result['is_anomaly'] = predictions == -1
         return result
+
+    def prepare_explainer(self):
+        """
+        Build (or rebuild) the SHAP TreeExplainer for the current model.
+        Cheap to call - just wraps the already-trained IsolationForest.
+        Call this once at server startup (alongside load()) to avoid paying
+        the setup cost on the first live prediction request.
+        """
+        if not self.is_trained:
+            raise RuntimeError("Model must be trained before building an explainer.")
+        self._explainer = shap.TreeExplainer(self.model)
+        return self._explainer
+
+    def explain(self, df: pd.DataFrame):
+        """
+        Compute per-feature SHAP contributions for each row in df.
+
+        Returns a list (one entry per row) of lists of
+        {"feature": name, "value": shap_value} dicts, sorted by
+        descending absolute contribution (most influential feature first).
+
+        Sign convention: SHAP explains the IsolationForest decision_function
+        output, where HIGHER = more normal. So:
+          - a NEGATIVE shap value means that feature pushed the sample
+            toward being flagged as an anomaly
+          - a POSITIVE shap value means that feature pushed the sample
+            toward looking normal/benign
+        """
+        if not self.is_trained:
+            raise RuntimeError("Model must be trained before explaining.")
+
+        if self._explainer is None:
+            self.prepare_explainer()
+
+        X = self._prepare_features(df)
+        X_scaled = self.scaler.transform(X)
+
+        raw_shap_values = np.array(self._explainer.shap_values(X_scaled))
+
+        per_row_contributions = []
+        for row in raw_shap_values:
+            contributions = [
+                {"feature": feature, "value": float(value)}
+                for feature, value in zip(self.FEATURE_COLUMNS, row)
+            ]
+            contributions.sort(key=lambda c: abs(c["value"]), reverse=True)
+            per_row_contributions.append(contributions)
+
+        return per_row_contributions
 
     def evaluate(self, df: pd.DataFrame):
         """

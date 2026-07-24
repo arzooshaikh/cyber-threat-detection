@@ -14,8 +14,15 @@ class TrafficInputSerializer(serializers.Serializer):
     dest_port = serializers.IntegerField()
 
 
+class FeatureContributionSerializer(serializers.Serializer):
+    """One feature's SHAP contribution to a single prediction."""
+    feature = serializers.CharField()
+    value = serializers.FloatField()
+
+
 class PredictionResponseSerializer(serializers.Serializer):
     """Formats the prediction output."""
     is_anomaly = serializers.BooleanField()
     anomaly_score = serializers.FloatField()
     confidence = serializers.FloatField()
+    feature_contributions = FeatureContributionSerializer(many=True)

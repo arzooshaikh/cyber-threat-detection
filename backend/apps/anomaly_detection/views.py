@@ -13,6 +13,7 @@ engine = AnomalyDetectionEngine()
 
 if os.path.exists(MODEL_PATH):
     engine.load(MODEL_PATH)
+    engine.prepare_explainer()  # build the SHAP TreeExplainer once at startup, not per-request
 else:
     engine.is_trained = False
 
@@ -44,10 +45,15 @@ class PredictAnomalyView(APIView):
         raw_score = float(row['anomaly_score'])
         confidence = max(0.0, min(1.0, (0.5 - raw_score)))
 
+        # SHAP feature contributions for this specific prediction (TreeExplainer,
+        # confirmed compatible with our IsolationForest in test_shap.py)
+        feature_contributions = engine.explain(df)[0]
+
         response_data = {
             'is_anomaly': bool(row['is_anomaly']),
             'anomaly_score': raw_score,
             'confidence': confidence,
+            'feature_contributions': feature_contributions,
         }
 
         output_serializer = PredictionResponseSerializer(response_data)
@@ -57,3 +63,4 @@ class PredictAnomalyView(APIView):
 from django.shortcuts import render
 
 # Create your views here.
+
