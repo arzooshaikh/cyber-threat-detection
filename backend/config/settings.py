@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',  # ← token auth support
     'corsheaders',              # ← add this
 
     'apps.core',
@@ -130,3 +131,19 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 ]
+
+REST_FRAMEWORK = {
+    # Two auth methods supported at once:
+    #  - TokenAuthentication: what the React frontend uses (Authorization: Token <key>)
+    #  - SessionAuthentication: lets you stay logged into the DRF browsable API
+    #    via the normal Django admin session, handy for manual testing in-browser.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # Locked down by default: every endpoint requires a logged-in user unless
+    # a view explicitly overrides this (none currently do).
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
