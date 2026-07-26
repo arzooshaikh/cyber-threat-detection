@@ -1,0 +1,9 @@
+**/.venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.git
+**/.idea
+**/db.sqlite3
+**/dist
+**/*.log

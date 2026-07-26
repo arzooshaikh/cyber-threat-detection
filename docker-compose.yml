@@ -1,0 +1,57 @@
+services:
+  # --- Redis: message broker, ready for the Celery step (not used yet) ---
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # --- Elasticsearch: search/log storage, ready for the next roadmap step ---
+  # xpack.security.enabled=false keeps this simple for local dev (no TLS certs
+  # or passwords to configure) - do NOT do this in a real production deployment.
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.4.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  # --- Django backend ---
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    volumes:
+      # Bind mount so your actual project files (including db.sqlite3 and the
+      # trained model .pkl) are used directly - edits on your machine are
+      # reflected instantly inside the container, same as running it natively.
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - elasticsearch
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # --- React frontend ---
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    volumes:
+      - ./frontend:/app
+      # Anonymous volume: keeps the container's own Linux-installed
+      # node_modules separate from your Windows node_modules folder, which
+      # contains native binaries that don't work inside a Linux container.
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  es_data:
