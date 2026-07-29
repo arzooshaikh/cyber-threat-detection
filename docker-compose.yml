@@ -36,6 +36,26 @@ services:
       - elasticsearch
     environment:
       - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CHANNELS_REDIS_URL=redis://redis:6379/1
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+
+  # --- Celery worker: runs background tasks (e.g. federated learning rounds)
+  # so the API can respond instantly instead of blocking while models train ---
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   # --- React frontend ---
   frontend:

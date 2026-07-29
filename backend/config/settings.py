@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,12 +32,14 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',                    # ← must be first: makes `runserver` ASGI/WebSocket-capable
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'rest_framework.authtoken',  # ← token auth support
     'corsheaders',              # ← add this
@@ -76,6 +79,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# --- Channels (WebSockets) ---
+# Uses a separate Redis logical DB (/1) from Celery (/0) - same Redis server,
+# just keeps the two use cases tidy and independently flushable.
+CHANNELS_REDIS_URL = os.environ.get('CHANNELS_REDIS_URL', 'redis://localhost:6379/1')
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [CHANNELS_REDIS_URL],
+        },
+    },
+}
 
 
 # Database
@@ -147,3 +164,20 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+# --- Celery (background tasks) ---
+# Defaults to localhost:6379 for running Django natively (outside Docker),
+# assuming `docker compose up redis` (or the full stack) is running, since
+# docker-compose publishes Redis on host port 6379.
+# Inside Docker Compose, these are overridden via environment variables to
+# redis://redis:6379/0 (the 'redis' service name, resolved on the compose
+# network) - see docker-compose.yml.
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+# Keep task results around for 1 hour - long enough for the frontend to poll
+# and pick up the result, without piling up in Redis forever.
+CELERY_RESULT_EXPIRES = 3600

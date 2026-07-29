@@ -14,6 +14,7 @@ function FederatedLearning() {
   const [bases, setBases] = useState<MilitaryBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [runningLabel, setRunningLabel] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const fetchAll = () => {
@@ -40,17 +41,47 @@ function FederatedLearning() {
     fetchAll();
   }, []);
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const runNewRound = async () => {
     setRunning(true);
+    setRunningLabel('Queuing round...');
     setError(null);
     try {
-      await api.post('/federated/run-round/', { num_bases: 3 });
-      fetchAll(); // refresh everything after the new round completes
+      // 1. Kick off the round - this returns almost instantly, training now
+      // happens in a Celery background worker instead of blocking this request.
+      const { data } = await api.post<{ task_id: string; status: string }>(
+        '/federated/run-round/',
+        { num_bases: 3 },
+      );
+      const taskId = data.task_id;
+
+      // 2. Poll until the worker finishes (or fails), checking every second.
+      setRunningLabel('Training 3 models in the background...');
+      const maxAttempts = 60; // ~60 seconds before giving up
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await sleep(1000);
+        const statusRes = await api.get<{ state: string; result?: unknown; error?: string }>(
+          `/federated/task-status/${taskId}/`,
+        );
+
+        if (statusRes.data.state === 'SUCCESS') {
+          fetchAll(); // refresh everything now that the round is saved
+          return;
+        }
+        if (statusRes.data.state === 'FAILURE') {
+          setError(`Federated round failed: ${statusRes.data.error ?? 'unknown error'}`);
+          return;
+        }
+        // otherwise still PENDING/STARTED - keep polling
+      }
+      setError('Timed out waiting for the federated round to finish.');
     } catch (err) {
-      setError('Failed to run federated round. Check Django server.');
+      setError('Failed to run federated round. Check Django server and that a Celery worker is running.');
       console.error(err);
     } finally {
       setRunning(false);
+      setRunningLabel('');
     }
   };
 
@@ -75,7 +106,7 @@ function FederatedLearning() {
       </p>
 
       <button onClick={runNewRound} disabled={running} style={{ padding: '0.75rem 1.5rem', marginBottom: '1.5rem' }}>
-        {running ? 'Running round (training 3 models)...' : '▶ Run New Federated Round'}
+        {running ? runningLabel || 'Working...' : '▶ Run New Federated Round'}
       </button>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}

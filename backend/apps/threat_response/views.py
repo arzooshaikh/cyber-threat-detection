@@ -9,8 +9,15 @@ from apps.core.serializers import ThreatDetectionSerializer
 from apps.anomaly_detection.views import engine  # already-loaded model + SHAP explainer
 from .serializers import DetectAndRespondRequestSerializer, ResolveThreatRequestSerializer
 from . import engine as policy  # rule-based threat_type + isolation policy
+from .broadcast import broadcast_threat_event
+from .es_indexing import ensure_threats_index, index_threat, search_threats
 
 import pandas as pd
+
+# Make sure the Elasticsearch index exists as soon as this app loads (same
+# "do it once at startup" pattern as loading the trained ML model). Harmless
+# if Elasticsearch isn't reachable yet - just logs a warning and moves on.
+ensure_threats_index()
 
 
 class DetectAndRespondView(APIView):
@@ -111,6 +118,8 @@ class DetectAndRespondView(APIView):
         )
 
         response_data['threat'] = ThreatDetectionSerializer(threat).data
+        broadcast_threat_event('created', dict(response_data['threat']))
+        index_threat(dict(response_data['threat']))
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
@@ -131,7 +140,10 @@ class IsolateThreatView(APIView):
         threat.isolation_timestamp = timezone.now()
         threat.save()
 
-        return Response(ThreatDetectionSerializer(threat).data, status=status.HTTP_200_OK)
+        serialized = ThreatDetectionSerializer(threat).data
+        broadcast_threat_event('updated', dict(serialized))
+        index_threat(dict(serialized))
+        return Response(serialized, status=status.HTTP_200_OK)
 
 
 class ResolveThreatView(APIView):
@@ -156,7 +168,49 @@ class ResolveThreatView(APIView):
         threat.resolved_at = timezone.now()
         threat.save()
 
-        return Response(ThreatDetectionSerializer(threat).data, status=status.HTTP_200_OK)
+        serialized = ThreatDetectionSerializer(threat).data
+        broadcast_threat_event('updated', dict(serialized))
+        index_threat(dict(serialized))
+        return Response(serialized, status=status.HTTP_200_OK)
+
+
+class ThreatSearchView(APIView):
+    """
+    GET /api/threat-response/search/?q=...&threat_type=...&status=...&is_isolated=...&min_confidence=...
+
+    Full-text + filtered search across all indexed threat logs, backed by
+    Elasticsearch (separate from the plain /api/threats/ CRUD endpoint, which
+    reads directly from the SQLite database instead).
+
+    Query params (all optional):
+      q             - free text, matched against src_ip/dest_ip/threat_type/notes/status
+      threat_type   - exact match, e.g. 'port_scan'
+      status        - exact match, e.g. 'active' | 'resolved' | 'false_positive'
+      is_isolated   - 'true' | 'false'
+      min_confidence - float 0-1, e.g. 0.75
+    """
+
+    def get(self, request):
+        q = request.query_params.get('q') or None
+        threat_type = request.query_params.get('threat_type') or None
+        status_param = request.query_params.get('status') or None
+
+        is_isolated_param = request.query_params.get('is_isolated')
+        is_isolated = None
+        if is_isolated_param is not None:
+            is_isolated = is_isolated_param.lower() == 'true'
+
+        min_confidence_param = request.query_params.get('min_confidence')
+        min_confidence = float(min_confidence_param) if min_confidence_param else None
+
+        results = search_threats(
+            query_text=q,
+            threat_type=threat_type,
+            status=status_param,
+            is_isolated=is_isolated,
+            min_confidence=min_confidence,
+        )
+        return Response({'count': len(results), 'results': results}, status=status.HTTP_200_OK)
 
 
 # Create your views here.
