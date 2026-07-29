@@ -21,3 +21,4 @@ def get_es_client() -> Elasticsearch:
     if _client is None:
         _client = Elasticsearch(ELASTICSEARCH_URL, request_timeout=5)
     return _client
+evrything
