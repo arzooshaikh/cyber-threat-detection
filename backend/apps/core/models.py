@@ -84,6 +84,7 @@ class ThreatDetection(models.Model):
 
     class Meta:
         db_table = 'threat_detections'
+        ordering = ['-detected_at']  # newest first - a security dashboard should lead with the latest threat
         indexes = [
             models.Index(fields=['base', 'detected_at']),
             models.Index(fields=['confidence_score']),
