@@ -1,5 +1,9 @@
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+
+logger = logging.getLogger(__name__)
 
 
 def broadcast_threat_event(event_type: str, threat_data: dict):
@@ -12,6 +16,8 @@ def broadcast_threat_event(event_type: str, threat_data: dict):
 
     Never raises - a Redis/channel-layer hiccup should never break the
     actual HTTP request that triggered this, it just won't be live-streamed.
+    The failure is always logged though, so it's visible in `docker compose
+    logs backend` rather than disappearing silently.
     """
     try:
         channel_layer = get_channel_layer()
@@ -26,4 +32,4 @@ def broadcast_threat_event(event_type: str, threat_data: dict):
             },
         )
     except Exception as exc:
-        print(f"[broadcast_threat_event] failed to broadcast: {exc}")
+        logger.error(f"Failed to broadcast threat event ({event_type}): {exc}")
