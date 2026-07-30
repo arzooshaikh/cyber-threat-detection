@@ -94,6 +94,7 @@ def search_threats(query_text=None, threat_type=None, status=None, is_isolated=N
                 "multi_match": {
                     "query": query_text,
                     "fields": ["src_ip", "dest_ip", "threat_type", "notes", "status"],
+                    "lenient": True,
                 }
             })
 
