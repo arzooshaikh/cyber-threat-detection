@@ -5,9 +5,14 @@ services:
     ports:
       - "6379:6379"
 
-  # --- Elasticsearch: search/log storage, ready for the next roadmap step ---
-  # xpack.security.enabled=false keeps this simple for local dev (no TLS certs
-  # or passwords to configure) - do NOT do this in a real production deployment.
+  # --- Elasticsearch: search/log storage ---
+  # ⚠️ DEV-ONLY SECURITY NOTE: xpack.security.enabled=false means this
+  # Elasticsearch instance has NO authentication and NO encryption at all -
+  # anyone who can reach port 9200 can read/write/delete every indexed threat.
+  # This is fine on your own machine for local development, but NEVER expose
+  # this configuration on a shared network, a public demo server, or anywhere
+  # else reachable by anyone other than you. A real deployment would need
+  # xpack.security.enabled=true with proper TLS certs and credentials.
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.4.4
     environment:
