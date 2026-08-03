@@ -156,4 +156,3 @@ class Command(BaseCommand):
             "Demo data ready. Tip: also run 'python manage.py index_existing_threats' "
             "to make these searchable via Elasticsearch."
         ))
-ss
