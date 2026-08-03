@@ -1,9 +1,15 @@
 services:
-  # --- Redis: message broker, ready for the Celery step (not used yet) ---
+  # --- Redis: message broker + channel layer (Celery + WebSockets) ---
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   # --- Elasticsearch: search/log storage ---
   # ⚠️ DEV-ONLY SECURITY NOTE: xpack.security.enabled=false means this
@@ -23,6 +29,18 @@ services:
       - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      # Elasticsearch's own image includes curl. wait_for_status=yellow means
+      # "at least usable" (green requires replica shards, which a single-node
+      # dev setup will never have) - yellow is the correct target here, not
+      # a sign of a problem. This is why plain `depends_on` wasn't enough:
+      # the container can report "started" 20-30+ seconds before this
+      # actually returns true.
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
 
   # --- Django backend ---
   backend:
@@ -37,14 +55,27 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - redis
-      - elasticsearch
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - CHANNELS_REDIS_URL=redis://redis:6379/1
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+    healthcheck:
+      # Hits the Django admin login page specifically because it's the one
+      # endpoint guaranteed to return 200 without authentication - every
+      # /api/ route correctly requires a token now (see Part 8), so checking
+      # one of those here would make urllib raise on the expected 401 and
+      # falsely report a healthy backend as "unhealthy".
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/admin/login/')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   # --- Celery worker: runs background tasks (e.g. federated learning rounds)
   # so the API can respond instantly instead of blocking while models train ---
@@ -56,7 +87,8 @@ services:
     volumes:
       - ./backend:/app
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -76,7 +108,8 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   es_data:
