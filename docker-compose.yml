@@ -36,7 +36,13 @@ services:
       # a sign of a problem. This is why plain `depends_on` wasn't enough:
       # the container can report "started" 20-30+ seconds before this
       # actually returns true.
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"]
+      #
+      # IMPORTANT: the URL must be single-quoted. Without quotes, the
+      # unescaped `&` in the query string is interpreted by the shell as
+      # "run curl in the background, then run a new command" instead of
+      # being part of the URL - which made this healthcheck silently fail
+      # 100% of the time, regardless of Elasticsearch's actual status.
+      test: ["CMD-SHELL", "curl -s 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"]
       interval: 10s
       timeout: 5s
       retries: 20
