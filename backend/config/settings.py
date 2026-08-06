@@ -21,12 +21,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ux%hom%pamzaeq+))%+g9mn9oo6)#c9uce5v162c&(+2xl99ne'
+# Read from the environment (see docker-compose.yml / .env), NOT hardcoded
+# here - this file is tracked in git, so a real secret key must never live
+# directly in it. The fallback below is intentionally the Django-generated
+# "django-insecure-" placeholder, only used if no env var is set (e.g. a
+# teammate running `python manage.py runserver` natively without Docker) -
+# Django's own security checks correctly flag that prefix as unsafe if it's
+# ever accidentally used outside local development.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-ux%hom%pamzaeq+))%+g9mn9oo6)#c9uce5v162c&(+2xl99ne',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
 
 
 # Application definition
