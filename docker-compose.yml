@@ -122,4 +122,4 @@ services:
         condition: service_healthy
 
 volumes:
-  es_data:
+
