@@ -1,6 +1,6 @@
 # 🛡️ Cyber Threat Detection for Defence Networks
 
-An AI-based Intrusion Detection System (IDS) built for the Smart India Hackathon: real-time network anomaly detection with **explainable AI**, **automatic threat response**, and a **custom federated ensemble learning** framework - so multiple military bases could one day collaboratively train a shared model without ever sharing raw network data.
+An AI-based Intrusion Detection System (IDS) for defence networks: real-time network anomaly detection with **explainable AI**, **automatic threat response**, and a **custom federated ensemble learning** framework - so multiple military bases could one day collaboratively train a shared model without ever sharing raw network data.
 
 ## What this actually does
 
@@ -81,4 +81,4 @@ cyber-threat-detection/
 
 - Elasticsearch runs with security disabled (`xpack.security.enabled=false`) - **local development only**, never expose this on a shared or public network.
 - The federated learning demo uses synthetic data split across simulated bases, not a real multi-base deployment.
-- This is a research/hackathon prototype, not a production-hardened security product.
+- This is a research/personal project, not a production-hardened security product.
