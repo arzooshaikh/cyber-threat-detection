@@ -32,34 +32,19 @@ function FeatureContributionBars({ contributions }: { contributions: FeatureCont
     <div>
       {contributions.map((c) => {
         const widthPct = (Math.abs(c.value) / maxAbs) * 100;
-        const isAnomalyPush = c.value < 0;
-        const barColor = isAnomalyPush ? '#cc0000' : '#00aa00';
+        const pushClass = c.value < 0 ? 'push-anomaly' : 'push-normal';
 
         return (
-          <div key={c.feature} style={{ marginBottom: '0.5rem' }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.85rem',
-                marginBottom: '0.15rem',
-              }}
-            >
-              <span style={{ fontFamily: 'monospace' }}>{c.feature}</span>
-              <span style={{ fontFamily: 'monospace', color: barColor }}>
+          <div key={c.feature} className="shap-row">
+            <div className="shap-row-head">
+              <span className="shap-feature">{c.feature}</span>
+              <span className={`shap-value ${pushClass}`}>
                 {c.value > 0 ? '+' : ''}
                 {c.value.toFixed(3)}
               </span>
             </div>
-            <div style={{ background: '#eee', borderRadius: '4px', height: '10px', width: '100%' }}>
-              <div
-                style={{
-                  width: `${widthPct}%`,
-                  background: barColor,
-                  height: '100%',
-                  borderRadius: '4px',
-                }}
-              />
+            <div className="shap-track">
+              <div className={`shap-fill ${pushClass}`} style={{ width: `${widthPct}%` }} />
             </div>
           </div>
         );
@@ -114,59 +99,55 @@ function RunDetection() {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px' }}>
+    <div className="page page-narrow">
+      <span className="eyebrow">Isolation Forest · Local Model</span>
       <h1>Run Live Detection</h1>
-      <p>Enter traffic feature values and test the trained Isolation Forest model.</p>
+      <p className="page-lede">
+        Enter traffic feature values and test the trained Isolation Forest model directly,
+        without saving a record.
+      </p>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <button type="button" onClick={loadBenignExample} style={{ marginRight: '0.5rem' }}>
+      <div className="btn-row">
+        <button type="button" className="btn" onClick={loadBenignExample}>
           Load Benign Example
         </button>
-        <button type="button" onClick={loadAttackExample}>
+        <button type="button" className="btn" onClick={loadAttackExample}>
           Load Attack Example
         </button>
       </div>
 
       <form onSubmit={handleSubmit}>
         {Object.entries(formValues).map(([key, value]) => (
-          <div key={key} style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-              {key}
-            </label>
+          <div key={key} className="field">
+            <label className="field-label">{key}</label>
             <input
               type="number"
               step="any"
+              className="input"
               value={value}
               onChange={(e) => handleChange(key as keyof typeof defaultValues, e.target.value)}
-              style={{ width: '100%', padding: '0.5rem' }}
             />
           </div>
         ))}
 
-        <button type="submit" disabled={loading} style={{ padding: '0.75rem 1.5rem', marginTop: '1rem' }}>
+        <button type="submit" className="btn btn-primary mt-lg" disabled={loading}>
           {loading ? 'Running...' : 'Run Detection'}
         </button>
       </form>
 
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+      {error && <p className="text-error mt-lg">{error}</p>}
 
       {result && (
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1rem',
-          borderRadius: '8px',
-          backgroundColor: result.is_anomaly ? '#ffe6e6' : '#e6ffe6',
-          border: `2px solid ${result.is_anomaly ? '#cc0000' : '#00aa00'}`,
-        }}>
-          <h3>{result.is_anomaly ? '🚨 Anomaly Detected!' : '✅ Traffic looks normal'}</h3>
-          <p>Anomaly Score: {result.anomaly_score.toFixed(4)}</p>
-          <p>Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+        <div className={`result-banner ${result.is_anomaly ? 'result-critical' : 'result-clear'}`}>
+          <h3>{result.is_anomaly ? '🚨 Anomaly Detected' : '✅ Traffic looks normal'}</h3>
+          <p className="result-metric">Anomaly Score: <strong>{result.anomaly_score.toFixed(4)}</strong></p>
+          <p className="result-metric">Confidence: <strong>{(result.confidence * 100).toFixed(1)}%</strong></p>
 
           {result.feature_contributions && result.feature_contributions.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
-              <h4 style={{ marginBottom: '0.25rem' }}>Why? (SHAP feature contributions)</h4>
-              <p style={{ fontSize: '0.85rem', color: '#555', marginTop: 0, marginBottom: '0.75rem' }}>
-                Red bars pushed this sample toward "anomaly". Green bars pushed it toward "normal".
+            <div className="mt-lg">
+              <h4>Why? (SHAP feature contributions)</h4>
+              <p className="text-muted-small" style={{ marginBottom: '0.9rem' }}>
+                Red bars pushed this sample toward "anomaly". Teal bars pushed it toward "normal".
                 Longer bar = stronger influence on this specific prediction.
               </p>
               <FeatureContributionBars contributions={result.feature_contributions} />
