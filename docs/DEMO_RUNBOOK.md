@@ -46,9 +46,10 @@ Keep the Django terminal/log window visible too (`docker compose logs -f backend
 
 ## 3. The actual demo script
 
-**Before the event: time yourself running Steps A-D against your actual SIH
-slot length (usually 5-10 minutes). Decide the cut order below in advance -
-don't improvise what to skip while a timer is running in front of judges.**
+**Before the event: time yourself running Steps A-D against your actual
+presentation slot length (usually 5-10 minutes for this kind of demo).
+Decide the cut order below in advance - don't improvise what to skip while
+a timer is running in front of an audience.**
 
 **Step A — Detection + Explainability (the headline feature)**
 1. On **Threat Response**, click **"Load Attack Example"**.
@@ -104,12 +105,13 @@ to click through reads as in-control, not as a gap.
 - [ ] A folder of screenshots of each step, in order
 
 **Record this backup on the EXACT machine and network you'll actually demo
-from** - not a personal laptop at home on good WiFi. SIH venues are known
-for flaky institutional networks, blocked ports, or proxy weirdness that can
-break Docker networking or CORS in ways a home setup never will. If there's
-any chance of demoing from a different machine than you developed on, do a
-full `git clone` + `docker compose up -d` (cold start) on that actual
-machine before the event, not just in theory - watch for `docker compose ps`
+from** - not a personal laptop at home on good WiFi. Unfamiliar venues are
+often the culprit for flaky institutional networks, blocked ports, or proxy
+weirdness that can break Docker networking or CORS in ways a home setup
+never will. If there's any chance of demoing from a different machine than
+you developed on, do a full `git clone` + `docker compose up -d` (cold
+start) on that actual machine beforehand, not just in theory - watch for
+`docker compose ps`
 showing all services `(healthy)`, same check used during development.
 
 *(Fill this in: place the backup video/screenshots at ______________ before the event.)*
