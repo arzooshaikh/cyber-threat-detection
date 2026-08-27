@@ -1,8 +1,12 @@
 function Dashboard() {
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Cyber Threat Detection Dashboard</h1>
-      <p>Welcome. Use the navigation above to view Bases, Threats, or run a live anomaly detection test.</p>
+    <div className="page">
+      <span className="eyebrow">Overview</span>
+      <h1>Cyber Threat Detection Console</h1>
+      <p className="page-lede">
+        Welcome. Use the navigation above to review military bases, monitor detected threats
+        in real time, run a live anomaly detection test, or trigger a federated learning round.
+      </p>
     </div>
   );
 }
