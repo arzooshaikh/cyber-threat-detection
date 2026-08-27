@@ -83,32 +83,31 @@ function ThreatResponse() {
   ];
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '650px' }}>
+    <div className="page page-narrow">
+      <span className="eyebrow">Detection &rarr; Explanation &rarr; Response</span>
       <h1>Threat Response</h1>
-      <p style={{ color: '#555' }}>
-        Runs the full pipeline: Isolation Forest detection → SHAP explanation →
-        rule-based threat classification → auto-isolation decision → saves a real
+      <p className="page-lede">
+        Runs the full pipeline: Isolation Forest detection &rarr; SHAP explanation &rarr;
+        rule-based threat classification &rarr; auto-isolation decision &rarr; saves a real
         record to the Threats page (only if traffic is flagged as anomalous).
       </p>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <button type="button" onClick={loadBenignExample} style={{ marginRight: '0.5rem' }}>
+      <div className="btn-row">
+        <button type="button" className="btn" onClick={loadBenignExample}>
           Load Benign Example
         </button>
-        <button type="button" onClick={loadAttackExample}>
+        <button type="button" className="btn" onClick={loadAttackExample}>
           Load Attack Example
         </button>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-            Military Base
-          </label>
+        <div className="field">
+          <label className="field-label">Military Base</label>
           <select
+            className="input"
             value={selectedBaseId}
             onChange={(e) => setSelectedBaseId(Number(e.target.value))}
-            style={{ width: '100%', padding: '0.5rem' }}
           >
             {bases.map((b) => (
               <option key={b.id} value={b.id}>{b.base_name} ({b.location})</option>
@@ -116,85 +115,82 @@ function ThreatResponse() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>src_ip</label>
+        <div className="field-row">
+          <div className="field">
+            <label className="field-label">src_ip</label>
             <input
               type="text"
+              className="input"
               value={formValues.src_ip}
               onChange={(e) => handleChange('src_ip', e.target.value)}
-              style={{ width: '100%', padding: '0.5rem' }}
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>dest_ip</label>
+          <div className="field">
+            <label className="field-label">dest_ip</label>
             <input
               type="text"
+              className="input"
               value={formValues.dest_ip}
               onChange={(e) => handleChange('dest_ip', e.target.value)}
-              style={{ width: '100%', padding: '0.5rem' }}
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>src_port</label>
+          <div className="field">
+            <label className="field-label">src_port</label>
             <input
               type="number"
+              className="input"
               value={formValues.src_port}
               onChange={(e) => handleChange('src_port', e.target.value)}
-              style={{ width: '100%', padding: '0.5rem' }}
             />
           </div>
         </div>
 
         {numericFields.map((key) => (
-          <div key={key} style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>{key}</label>
+          <div key={key} className="field">
+            <label className="field-label">{key}</label>
             <input
               type="number"
               step="any"
+              className="input"
               value={formValues[key]}
               onChange={(e) => handleChange(key, e.target.value)}
-              style={{ width: '100%', padding: '0.5rem' }}
             />
           </div>
         ))}
 
-        <button type="submit" disabled={loading} style={{ padding: '0.75rem 1.5rem', marginTop: '1rem' }}>
+        <button type="submit" className="btn btn-primary mt-lg" disabled={loading}>
           {loading ? 'Running...' : 'Run Detection & Response'}
         </button>
       </form>
 
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+      {error && <p className="text-error mt-lg">{error}</p>}
 
       {result && (
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1rem',
-          borderRadius: '8px',
-          backgroundColor: result.is_anomaly ? '#ffe6e6' : '#e6ffe6',
-          border: `2px solid ${result.is_anomaly ? '#cc0000' : '#00aa00'}`,
-        }}>
-          <h3>{result.is_anomaly ? '🚨 Anomaly Detected!' : '✅ Traffic looks normal'}</h3>
-          <p>Anomaly Score: {result.anomaly_score.toFixed(4)}</p>
-          <p>Confidence: {(result.confidence_score * 100).toFixed(1)}%</p>
+        <div className={`result-banner ${result.is_anomaly ? 'result-critical' : 'result-clear'}`}>
+          <h3>{result.is_anomaly ? '🚨 Anomaly Detected' : '✅ Traffic looks normal'}</h3>
+          <p className="result-metric">Anomaly Score: <strong>{result.anomaly_score.toFixed(4)}</strong></p>
+          <p className="result-metric">Confidence: <strong>{(result.confidence_score * 100).toFixed(1)}%</strong></p>
 
           {result.threat && (
-            <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '6px' }}>
-              <p><strong>Threat Type:</strong> {result.threat.threat_type}</p>
-              <p>
+            <div className="result-detail">
+              <p className="result-metric">
+                <strong>Threat Type:</strong>{' '}
+                <span className="badge badge-caution">{result.threat.threat_type}</span>
+              </p>
+              <p className="result-metric mt-lg" style={{ marginTop: '0.5rem' }}>
                 <strong>Auto-Isolated:</strong>{' '}
                 {result.threat.is_isolated
-                  ? '🔒 Yes (confidence ≥ 75% threshold)'
-                  : '— No (below 75% auto-isolate threshold — visible on the Threats page for manual review)'}
+                  ? <span className="badge badge-critical">Yes &middot; confidence &ge; 75%</span>
+                  : <span className="badge badge-neutral">No &middot; below 75% threshold</span>}
               </p>
-              <p style={{ fontSize: '0.85rem', color: '#555' }}>
+              <p className="text-muted-small" style={{ marginTop: '0.6rem', marginBottom: 0 }}>
                 Saved as Threat #{result.threat.id} — view/manage it on the Threats page.
               </p>
             </div>
           )}
 
           {!result.is_anomaly && (
-            <p style={{ fontSize: '0.85rem', color: '#555' }}>
+            <p className="text-muted-small">
               Nothing saved — this endpoint only logs genuine detections, same as a real IDS would.
             </p>
           )}
