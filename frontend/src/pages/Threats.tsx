@@ -2,19 +2,6 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { ThreatDetection } from '../types';
 
-const cellStyle: React.CSSProperties = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'left',
-};
-
-const buttonStyle: React.CSSProperties = {
-  padding: '0.3rem 0.6rem',
-  marginRight: '0.4rem',
-  fontSize: '0.8rem',
-  cursor: 'pointer',
-};
-
 function Threats() {
   const [threats, setThreats] = useState<ThreatDetection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,104 +141,120 @@ function Threats() {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  const confidenceBadge = (score: number) => {
+    if (score >= 0.75) return <span className="badge badge-critical">{(score * 100).toFixed(0)}%</span>;
+    if (score >= 0.4) return <span className="badge badge-caution">{(score * 100).toFixed(0)}%</span>;
+    return <span className="badge badge-info">{(score * 100).toFixed(0)}%</span>;
+  };
+
+  const renderThreatRows = (list: ThreatDetection[], withActions: boolean) =>
+    list.map((threat) => (
+      <tr key={threat.id} className={threat.confidence_score >= 0.75 ? 'row-critical' : ''}>
+        <td className="mono">{threat.src_ip}</td>
+        <td className="mono">{threat.dest_ip}</td>
+        <td><span className="badge badge-neutral">{threat.threat_type}</span></td>
+        <td>{confidenceBadge(threat.confidence_score)}</td>
+        <td>{threat.status}</td>
+        <td>{threat.is_isolated ? <span className="badge badge-critical">Isolated</span> : '—'}</td>
+        <td className="mono">{new Date(threat.detected_at).toLocaleString()}</td>
+        {withActions && (
+          <td>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {!threat.is_isolated && (
+                <button
+                  className="btn btn-small btn-danger"
+                  disabled={busyId === threat.id}
+                  onClick={() => handleIsolate(threat.id)}
+                >
+                  Isolate
+                </button>
+              )}
+              {threat.status === 'active' && (
+                <>
+                  <button
+                    className="btn btn-small"
+                    disabled={busyId === threat.id}
+                    onClick={() => handleResolve(threat.id, 'resolved')}
+                  >
+                    Resolve
+                  </button>
+                  <button
+                    className="btn btn-small"
+                    disabled={busyId === threat.id}
+                    onClick={() => handleResolve(threat.id, 'false_positive')}
+                  >
+                    False Positive
+                  </button>
+                </>
+              )}
+              {threat.status !== 'active' && <span className="text-muted-small">{threat.status}</span>}
+            </div>
+          </td>
+        )}
+      </tr>
+    ));
+
+  if (loading) return <div className="page"><p>Loading...</p></div>;
+  if (error) return <div className="page"><p className="text-error">{error}</p></div>;
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="page">
+      <span className="eyebrow">Live Feed</span>
       <h1>
         Detected Threats{' '}
-        <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: liveConnected ? '#00aa00' : '#999' }}>
-          {liveConnected ? '🟢 Live' : '⚪ Connecting...'}
+        <span className={`live-indicator ${liveConnected ? 'live' : 'off'}`}>
+          <span className={`status-dot ${liveConnected ? 'live' : 'off'}`} />
+          {liveConnected ? 'Live' : 'Connecting...'}
         </span>
       </h1>
-      <p style={{ color: '#555', fontSize: '0.9rem' }}>
+      <p className="page-lede">
         Threats logged here are created automatically by the{' '}
         <code>/api/threat-response/detect/</code> pipeline (see the "Threat Response" page)
         whenever the Isolation Forest flags traffic as anomalous. New detections and status
         changes appear instantly via WebSocket, no refresh needed.
       </p>
-      {actionError && <p style={{ color: 'red' }}>{actionError}</p>}
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={cellStyle}>Source IP</th>
-            <th style={cellStyle}>Destination IP</th>
-            <th style={cellStyle}>Threat Type</th>
-            <th style={cellStyle}>Confidence</th>
-            <th style={cellStyle}>Status</th>
-            <th style={cellStyle}>Isolated</th>
-            <th style={cellStyle}>Detected At</th>
-            <th style={cellStyle}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {threats.map((threat) => (
-            <tr key={threat.id} style={{ backgroundColor: threat.confidence_score > 0.9 ? '#ffe6e6' : 'white' }}>
-              <td style={cellStyle}>{threat.src_ip}</td>
-              <td style={cellStyle}>{threat.dest_ip}</td>
-              <td style={cellStyle}>{threat.threat_type}</td>
-              <td style={cellStyle}>{(threat.confidence_score * 100).toFixed(0)}%</td>
-              <td style={cellStyle}>{threat.status}</td>
-              <td style={cellStyle}>{threat.is_isolated ? '🔒' : '—'}</td>
-              <td style={cellStyle}>{new Date(threat.detected_at).toLocaleString()}</td>
-              <td style={cellStyle}>
-                {!threat.is_isolated && (
-                  <button
-                    style={buttonStyle}
-                    disabled={busyId === threat.id}
-                    onClick={() => handleIsolate(threat.id)}
-                  >
-                    🔒 Isolate
-                  </button>
-                )}
-                {threat.status === 'active' && (
-                  <>
-                    <button
-                      style={buttonStyle}
-                      disabled={busyId === threat.id}
-                      onClick={() => handleResolve(threat.id, 'resolved')}
-                    >
-                      ✅ Resolve
-                    </button>
-                    <button
-                      style={buttonStyle}
-                      disabled={busyId === threat.id}
-                      onClick={() => handleResolve(threat.id, 'false_positive')}
-                    >
-                      🚫 False Positive
-                    </button>
-                  </>
-                )}
-                {threat.status !== 'active' && <span style={{ color: '#888' }}>{threat.status}</span>}
-              </td>
+      {actionError && <p className="text-error">{actionError}</p>}
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Source IP</th>
+              <th>Destination IP</th>
+              <th>Threat Type</th>
+              <th>Confidence</th>
+              <th>Status</th>
+              <th>Isolated</th>
+              <th>Detected At</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>{renderThreatRows(threats, true)}</tbody>
+        </table>
+      </div>
 
-      <hr style={{ margin: '2.5rem 0', border: 'none', borderTop: '1px solid #ddd' }} />
+      <hr />
 
+      <span className="eyebrow">Log Storage &amp; Search</span>
       <h2>🔍 Search Threat Logs (Elasticsearch)</h2>
-      <p style={{ color: '#555', fontSize: '0.9rem' }}>
+      <p className="page-lede">
         Full-text and filtered search across all indexed threats, backed by Elasticsearch -
         separate from the live table above (which reads straight from the database).
       </p>
 
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold' }}>Search text</label>
+      <div className="field-row" style={{ alignItems: 'flex-end', marginBottom: '1rem' }}>
+        <div className="field" style={{ flex: 2, minWidth: '220px' }}>
+          <label className="field-label">Search text</label>
           <input
             type="text"
+            className="input"
             placeholder="e.g. 192.168.1.10 or port_scan"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: '0.4rem', minWidth: '220px' }}
           />
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold' }}>Threat type</label>
-          <select value={searchThreatType} onChange={(e) => setSearchThreatType(e.target.value)} style={{ padding: '0.4rem' }}>
+        <div className="field">
+          <label className="field-label">Threat type</label>
+          <select className="input" value={searchThreatType} onChange={(e) => setSearchThreatType(e.target.value)}>
             <option value="">Any</option>
             <option value="dos">dos</option>
             <option value="port_scan">port_scan</option>
@@ -261,74 +264,68 @@ function Threats() {
             <option value="unknown">unknown</option>
           </select>
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold' }}>Status</label>
-          <select value={searchStatus} onChange={(e) => setSearchStatus(e.target.value)} style={{ padding: '0.4rem' }}>
+        <div className="field">
+          <label className="field-label">Status</label>
+          <select className="input" value={searchStatus} onChange={(e) => setSearchStatus(e.target.value)}>
             <option value="">Any</option>
             <option value="active">active</option>
             <option value="resolved">resolved</option>
             <option value="false_positive">false_positive</option>
           </select>
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold' }}>Min confidence</label>
+        <div className="field" style={{ minWidth: '110px' }}>
+          <label className="field-label">Min confidence</label>
           <input
             type="number"
             min="0"
             max="1"
             step="0.05"
+            className="input"
             placeholder="e.g. 0.75"
             value={searchMinConfidence}
             onChange={(e) => setSearchMinConfidence(e.target.value)}
-            style={{ padding: '0.4rem', width: '100px' }}
           />
         </div>
-        <button onClick={runSearch} disabled={searching} style={{ padding: '0.5rem 1rem' }}>
-          {searching ? 'Searching...' : 'Search'}
-        </button>
-        {searchResults !== null && (
-          <button onClick={clearSearch} style={{ padding: '0.5rem 1rem' }}>
-            Clear
+        <div className="field" style={{ flex: '0 0 auto', display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-primary" onClick={runSearch} disabled={searching}>
+            {searching ? 'Searching...' : 'Search'}
           </button>
-        )}
+          {searchResults !== null && (
+            <button className="btn" onClick={clearSearch}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
-      {searchError && <p style={{ color: 'red' }}>{searchError}</p>}
+      {searchError && <p className="text-error">{searchError}</p>}
 
       {searchResults !== null && (
         <>
-          <p style={{ color: '#555', fontSize: '0.9rem' }}>{searchResults.length} result(s)</p>
-          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr>
-                <th style={cellStyle}>Source IP</th>
-                <th style={cellStyle}>Destination IP</th>
-                <th style={cellStyle}>Threat Type</th>
-                <th style={cellStyle}>Confidence</th>
-                <th style={cellStyle}>Status</th>
-                <th style={cellStyle}>Isolated</th>
-                <th style={cellStyle}>Detected At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {searchResults.map((threat) => (
-                <tr key={threat.id}>
-                  <td style={cellStyle}>{threat.src_ip}</td>
-                  <td style={cellStyle}>{threat.dest_ip}</td>
-                  <td style={cellStyle}>{threat.threat_type}</td>
-                  <td style={cellStyle}>{(threat.confidence_score * 100).toFixed(0)}%</td>
-                  <td style={cellStyle}>{threat.status}</td>
-                  <td style={cellStyle}>{threat.is_isolated ? '🔒' : '—'}</td>
-                  <td style={cellStyle}>{new Date(threat.detected_at).toLocaleString()}</td>
-                </tr>
-              ))}
-              {searchResults.length === 0 && (
+          <p className="text-muted-small">{searchResults.length} result(s)</p>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td style={cellStyle} colSpan={7}>No matching threats found.</td>
+                  <th>Source IP</th>
+                  <th>Destination IP</th>
+                  <th>Threat Type</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                  <th>Isolated</th>
+                  <th>Detected At</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {renderThreatRows(searchResults, false)}
+                {searchResults.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-muted-small">No matching threats found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
