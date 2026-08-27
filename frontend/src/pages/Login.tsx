@@ -25,51 +25,42 @@ function Login() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: '350px',
-        margin: '4rem auto',
-        padding: '2rem',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-      }}
-    >
-      <h1 style={{ textAlign: 'center', fontSize: '1.5rem' }}>🛡️ CTD System</h1>
-      <p style={{ textAlign: 'center', color: '#555' }}>Sign in to continue</p>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>
-            Username
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-            required
-            autoFocus
-          />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-            required
-          />
-        </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: '0.6rem' }}>
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
-      <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '1rem', textAlign: 'center' }}>
-        Use your Django admin username and password.
-      </p>
+    <div className="auth-shell">
+      <div className="auth-panel">
+        <span className="eyebrow" style={{ textAlign: 'center' }}>Secure Access</span>
+        <h1 className="auth-title">🛡️ CTD Console</h1>
+        <p className="auth-subtitle">Sign in to continue</p>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label className="field-label">Username</label>
+            <input
+              type="text"
+              className="input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="field">
+            <label className="field-label">Password</label>
+            <input
+              type="password"
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="text-error">{error}</p>}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+        <p className="auth-hint">
+          Use your Django admin username and password.
+        </p>
+      </div>
     </div>
   );
 }
