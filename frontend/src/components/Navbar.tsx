@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { IconShield, IconLogOut } from './Icons';
 
 function Navbar() {
   const location = useLocation();
@@ -18,7 +19,10 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar-brand">🛡️ CTD Console</span>
+      <span className="navbar-brand">
+        <IconShield style={{ width: 18, height: 18, color: 'var(--accent)' }} />
+        CTD Console
+      </span>
       <div className="navbar-links">
         <Link to="/" className={linkClass('/')}>Dashboard</Link>
         <Link to="/bases" className={linkClass('/bases')}>Bases</Link>
@@ -30,6 +34,7 @@ function Navbar() {
       {isAuthenticated && (
         <div className="navbar-spacer">
           <button className="btn-logout" onClick={handleLogout}>
+            <IconLogOut style={{ width: 14, height: 14, marginRight: 4, verticalAlign: '-2px' }} />
             Logout
           </button>
         </div>
