@@ -85,6 +85,32 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
   background-size: 32px 32px;
   background-attachment: fixed;
+  position: relative;
+}
+
+/* A very slow, very faint horizontal band drifting down the page - like a
+   radar/plotting sweep. Deliberately subtle (low opacity, 12s cycle,
+   pointer-events disabled) so it reads as ambient life, not decoration. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--accent-bg) 48%,
+    transparent 100%
+  );
+  height: 40vh;
+  opacity: 0.5;
+  animation: scan-sweep 12s linear infinite;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 h1, h2, h3, h4 {
@@ -239,6 +265,7 @@ hr {
 .status-dot.live {
   background: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+  animation: pulse-dot 2s ease-in-out infinite;
 }
 
 .status-dot.off {
@@ -265,6 +292,11 @@ hr {
   border-radius: var(--radius);
   padding: 1.5rem 1.75rem;
   margin-bottom: 1.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.panel:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .panel.panel-critical { border-top-color: var(--level-critical); }
@@ -318,6 +350,8 @@ hr {
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+  box-shadow: 0 0 0 4px var(--accent-bg);
+  transform: translateY(-1px);
 }
 
 .btn-small {
@@ -576,7 +610,7 @@ table.data-table {
 .shap-fill.push-anomaly { background: var(--level-critical); }
 .shap-fill.push-normal { background: var(--accent); }
 
-/* ---------- Stat cards (Federated Learning) ---------- */
+/* ---------- Stat cards (Federated Learning + Dashboard) ---------- */
 .stat-grid {
   display: flex;
   gap: 1rem;
@@ -591,6 +625,24 @@ table.data-table {
   padding: 1.1rem 1.4rem;
   min-width: 150px;
   flex: 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.stat-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-border);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--accent-border);
+}
+
+.stat-icon-row {
+  margin-bottom: 0.6rem;
+}
+
+.stat-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  opacity: 0.85;
 }
 
 .stat-value {
@@ -598,6 +650,7 @@ table.data-table {
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--accent-strong);
+  text-shadow: 0 0 18px currentColor;
 }
 
 .stat-label {
@@ -607,6 +660,86 @@ table.data-table {
   text-transform: uppercase;
   color: var(--text-faint);
   margin-top: 0.15rem;
+}
+
+/* ---------- Dashboard quick-action cards ---------- */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.action-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  position: relative;
+}
+
+.action-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-border);
+  background: var(--surface-raised);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--accent-border);
+}
+
+.action-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.action-body {
+  flex: 1;
+}
+
+.action-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.98rem;
+  margin-bottom: 0.3rem;
+}
+
+.action-description {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.action-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.action-card:hover .action-arrow {
+  transform: translateX(3px);
+  color: var(--accent);
+}
+
+/* ---------- Motion ---------- */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent-bg); }
+  50% { box-shadow: 0 0 0 6px var(--accent-bg); }
+}
+
+@keyframes scan-sweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 
 /* ---------- Auth (login) ---------- */
@@ -675,6 +808,7 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+    animation: none !important;
   }
 }
 
