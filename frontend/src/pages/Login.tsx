@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { IconLock } from '../components/Icons';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -28,7 +29,10 @@ function Login() {
     <div className="auth-shell">
       <div className="auth-panel">
         <span className="eyebrow" style={{ textAlign: 'center' }}>Secure Access</span>
-        <h1 className="auth-title">🛡️ CTD Console</h1>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+          <IconLock style={{ width: 28, height: 28, color: 'var(--accent)' }} />
+        </div>
+        <h1 className="auth-title">CTD Console</h1>
         <p className="auth-subtitle">Sign in to continue</p>
         <form onSubmit={handleSubmit}>
           <div className="field">
